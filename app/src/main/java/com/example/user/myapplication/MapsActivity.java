@@ -1,83 +1,128 @@
 package com.example.user.myapplication;
 
-import android.content.Context;
-import android.location.Criteria;
 import android.location.Location;
-import android.location.LocationManager;
 import android.os.Bundle;
-import android.support.v4.app.FragmentActivity;
+import android.support.v7.app.AppCompatActivity;
+import android.widget.Toast;
 
+import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-import java.text.CollationElementIterator;
+public class MapsActivity extends AppCompatActivity implements
+        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,
+        LocationListener,
+        OnMapReadyCallback {
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback{
+    LocationRequest mLocationRequest;
+    GoogleApiClient mGoogleApiClient;
 
-    private GoogleMap mMap; // Might be null if Google Play services APK is not available.
-    private GoogleApiClient mGoogleApiClient;
-    private Location mLastLocation;
-    private CollationElementIterator mLatitudeText;
-    private CollationElementIterator mLongitudeText;
-    private LocationRequest mLocationRequest;
-    private GoogleApiClient mGoogleClient;
+    LatLng latLng;
+    GoogleMap mGoogleMap;
+    SupportMapFragment mFragment;
+    Marker mCurrLocation;
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
-        MapFragment mapFragment = (MapFragment) getFragmentManager()
-                .findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
+
+        mFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
+        mFragment.getMapAsync(this);
     }
 
     @Override
-    public void onMapReady(final GoogleMap map) {
-        //set to google earth
-        map.setMapType(GoogleMap.MAP_TYPE_HYBRID);
-        //get current location
-        map.setMyLocationEnabled(true);
-        map.getUiSettings().setMyLocationButtonEnabled(false);
-        //add marker to the buildings Per Buildings (One Per QR Scan)
-        map.addMarker(new MarkerOptions().position(new LatLng(14.565448, 120.993215)).title("Lambda"));
-        map.addMarker(new MarkerOptions().position(new LatLng(14.565637, 120.992596)).title("Mu"));
-        map.addMarker(new MarkerOptions().position(new LatLng(14.566283, 120.993055)).title("Xi"));
-        map.addMarker(new MarkerOptions().position(new LatLng(14.567004, 120.992645)).title("Rho"));
-        map.addMarker(new MarkerOptions().position(new LatLng(14.566351, 120.992207)).title("Omicron"));
+    public void onMapReady(GoogleMap googleMap) {
 
-        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        Criteria criteria = new Criteria();
-        String provider = locationManager.getBestProvider(criteria, true);
-        final Location location = locationManager.getLastKnownLocation(provider);
+        mGoogleMap = googleMap;
 
-        // Zoom to initial position
-        if (location != null) {
+        mGoogleMap.setMyLocationEnabled(true);
+        mGoogleMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+        mGoogleMap.getUiSettings().setMyLocationButtonEnabled(false);
 
-            LatLng target = new LatLng(location.getLatitude(), location.getLongitude());
-            map.addMarker(new MarkerOptions().position(new LatLng(location.getLatitude(), location.getLongitude())).title("You are here!").snippet("This is Your Starting Outdoor Position "));
-        }
 
-        //DLSU Map
-        if (location != null) {
+        buildGoogleApiClient();
 
-            LatLng target = new LatLng(14.565472, 120.992894);
-            CameraPosition position = map.getCameraPosition();
-
-            CameraPosition.Builder builder = new CameraPosition.Builder();
-            builder.zoom(17);
-            builder.tilt(0);
-            builder.bearing(245);
-            builder.target(target);
-            map.animateCamera(CameraUpdateFactory.newCameraPosition(builder.build()));
-        }
-
+        mGoogleApiClient.connect();
     }
 
+    @Override
+    public void onPause() {
+        super.onPause();
+        //Unregister for location callbacks:
+        if (mGoogleApiClient != null) {
+            LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
+        }
+    }
+
+    protected synchronized void buildGoogleApiClient() {
+        Toast.makeText(this, "buildGoogleApiClient", Toast.LENGTH_SHORT).show();
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .addApi(LocationServices.API)
+                .build();
+    }
+
+    @Override
+    public void onConnected(Bundle bundle) {
+        Toast.makeText(this, "onConnected", Toast.LENGTH_SHORT).show();
+        Location mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
+                mGoogleApiClient);
+        if (mLastLocation != null) {
+            //place marker at current position
+            mGoogleMap.clear();
+            latLng = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
+            MarkerOptions markerOptions = new MarkerOptions();
+            markerOptions.position(latLng);
+            markerOptions.title("You are here!");
+            markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_MAGENTA));
+            mCurrLocation = mGoogleMap.addMarker(markerOptions);
+            CameraPosition.Builder builder = new CameraPosition.Builder();
+            builder.zoom(19);
+            builder.tilt(0);
+            builder.bearing(245);
+            builder.target(latLng);
+            mGoogleMap.animateCamera(CameraUpdateFactory.newCameraPosition(builder.build()));
+        }
+
+        mLocationRequest = new LocationRequest();
+        mLocationRequest.setInterval(5000); //5 seconds
+        mLocationRequest.setFastestInterval(3000); //3 seconds
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
+        //mLocationRequest.setSmallestDisplacement(0.1F); //1/10 meter
+
+        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+        Toast.makeText(this, "onConnectionSuspended", Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onConnectionFailed(ConnectionResult connectionResult) {
+        Toast.makeText(this, "onConnectionFailed", Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        CameraPosition.Builder builder = new CameraPosition.Builder();
+        builder.zoom(19);
+        builder.tilt(0);
+        builder.bearing(245);
+        builder.target(latLng);
+        mGoogleMap.animateCamera(CameraUpdateFactory.newCameraPosition(builder.build()));
+    }
 }
