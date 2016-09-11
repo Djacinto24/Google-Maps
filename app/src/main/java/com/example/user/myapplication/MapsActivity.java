@@ -81,7 +81,7 @@ public class MapsActivity extends AppCompatActivity implements
         Location mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
                 mGoogleApiClient);
         if (mLastLocation != null) {
-            //place marker at current position
+            //current position
             mGoogleMap.clear();
             latLng = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
             MarkerOptions markerOptions = new MarkerOptions();
@@ -100,7 +100,7 @@ public class MapsActivity extends AppCompatActivity implements
         mLocationRequest = new LocationRequest();
         mLocationRequest.setInterval(5000); //5 seconds
         mLocationRequest.setFastestInterval(3000); //3 seconds
-        mLocationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         //mLocationRequest.setSmallestDisplacement(0.1F); //1/10 meter
 
         LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
@@ -118,11 +118,25 @@ public class MapsActivity extends AppCompatActivity implements
 
     @Override
     public void onLocationChanged(Location location) {
-        CameraPosition.Builder builder = new CameraPosition.Builder();
-        builder.zoom(19);
-        builder.tilt(0);
-        builder.bearing(245);
-        builder.target(latLng);
-        mGoogleMap.animateCamera(CameraUpdateFactory.newCameraPosition(builder.build()));
+        Location mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
+                mGoogleApiClient);
+        if (mLastLocation != null) {
+            mGoogleMap.clear();
+            latLng = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
+            CameraPosition.Builder builder = new CameraPosition.Builder();
+            builder.zoom(19);
+            builder.tilt(0);
+            builder.bearing(245);
+            builder.target(latLng);
+            mGoogleMap.animateCamera(CameraUpdateFactory.newCameraPosition(builder.build()));
+        }
+
+        mLocationRequest = new LocationRequest();
+        mLocationRequest.setInterval(5000); //5 seconds
+        mLocationRequest.setFastestInterval(3000); //3 seconds
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        //mLocationRequest.setSmallestDisplacement(0.1F); //1/10 meter
+
+        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
     }
 }
