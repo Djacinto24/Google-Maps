@@ -1,8 +1,9 @@
 package com.example.user.myapplication;
 
+import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
+import android.support.v4.app.FragmentActivity;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -16,11 +17,13 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
+import com.google.android.gms.maps.model.Circle;
+import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-public class MapsActivity extends AppCompatActivity implements
+public class MapsActivity extends FragmentActivity implements
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,
         LocationListener,
         OnMapReadyCallback {
@@ -37,7 +40,6 @@ public class MapsActivity extends AppCompatActivity implements
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
-
         mFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mFragment.getMapAsync(this);
     }
@@ -50,10 +52,7 @@ public class MapsActivity extends AppCompatActivity implements
         mGoogleMap.setMyLocationEnabled(true);
         mGoogleMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
         mGoogleMap.getUiSettings().setMyLocationButtonEnabled(false);
-
-
         buildGoogleApiClient();
-
         mGoogleApiClient.connect();
     }
 
@@ -95,6 +94,12 @@ public class MapsActivity extends AppCompatActivity implements
             builder.bearing(245);
             builder.target(latLng);
             mGoogleMap.animateCamera(CameraUpdateFactory.newCameraPosition(builder.build()));
+
+            Circle circle = mGoogleMap.addCircle(new CircleOptions()
+                    .center(latLng)
+                    .radius(5)
+                    .strokeColor(Color.rgb(153,255,255))
+                    .fillColor(Color.TRANSPARENT));
         }
 
         mLocationRequest = new LocationRequest();
@@ -129,13 +134,18 @@ public class MapsActivity extends AppCompatActivity implements
             builder.bearing(245);
             builder.target(latLng);
             mGoogleMap.animateCamera(CameraUpdateFactory.newCameraPosition(builder.build()));
+            Circle circle = mGoogleMap.addCircle(new CircleOptions()
+                    .center(latLng)
+                    .radius(5)
+                    .strokeColor(Color.rgb(153, 255, 255))
+                    .fillColor(Color.TRANSPARENT));
         }
 
         mLocationRequest = new LocationRequest();
         mLocationRequest.setInterval(5000); //5 seconds
         mLocationRequest.setFastestInterval(3000); //3 seconds
         mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-        //mLocationRequest.setSmallestDisplacement(0.1F); //1/10 meter
+        mLocationRequest.setSmallestDisplacement(0.1F); //1/10 meter
 
         LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
     }
